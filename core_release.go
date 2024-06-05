@@ -5,7 +5,6 @@ package core_server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -76,6 +75,4 @@ func InitLogger() {
 	}()
 
 	log.SetOutput(logger)
-	log.Println("Logger Setup Complete")
-	fmt.Println("Logging output to", logger.Filename)
 }
