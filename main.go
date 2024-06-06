@@ -1,4 +1,6 @@
 /*
+# Intro
+
 The core server program is a simple reverse proxy that handles https and issues
 certificates on demand using let's encrypt.
 
@@ -10,12 +12,14 @@ Instead, each web server listens on its own port, but can still accept incoming
 requests from the outside world if they are sent to the domain it wants to
 handle.
 
+# Command Interface
+
 Each web server needs to simply send a command to the core server telling it
 which domain to redirect to which port.
 
 There's no json or http API. Instead, you send a text message over UDP.
 
-# The UDP port is 40608
+The UDP port is 40608.
 
 The message needs to look like this:
 
@@ -39,6 +43,8 @@ The only security feature is that it will reject any UDP message not coming from
 127.0.0.1, so that no one running on a different machine can send a command to
 core server directly.
 
+# Local vs Release mode
+
 If you build this program without any build tags, it will run in "local dev
 mode". It will only handle https if it can detect that `mkcert` command is
 installed. If it cannot detect it, it will only serve http requests.
@@ -54,6 +60,8 @@ When running on Linux, instead of running it with sudo, give it permission to
 listen on port 80 and 443 using capabilities:
 
 	sudo setcap CAP_NET_BIND_SERVICE=+eip ./core_server
+
+# Idempotence
 
 The core_server is idempotent: it's safe to run multiple times. If another
 core_server process is already running, it will send it a signal to shutdown, so
