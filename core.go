@@ -1,4 +1,4 @@
-package core_server
+package main
 
 import (
 	"fmt"
@@ -12,11 +12,12 @@ import (
 	"strings"
 	"time"
 
+	lib "go.hasen.dev/core_server/lib"
 	"go.hasen.dev/generic"
 )
 
 // port used by proxy server to communicate with target servers
-const LOCAL_UDP_PORT = 40608
+const PORT = lib.PORT
 
 const (
 	ADD_TARGET    = "add"
@@ -68,9 +69,8 @@ type CoreServer struct {
 	Targets    []ForwardTarget
 }
 
-func NewCoreServer() *CoreServer {
+func NewCoreServerWithConfigLoaded() *CoreServer {
 	var s CoreServer
-	log.Println("NewCoreServer")
 
 	configRoot, err := os.UserConfigDir()
 	if err != nil {
@@ -124,39 +124,6 @@ func ForwardRequestLocally(w http.ResponseWriter, req *http.Request, t ForwardTa
 	rev.ServeHTTP(w, req)
 }
 
-// helper functions for app servers that don't swap themselves in
-func AnnounceForwardTarget(domain string, port int) {
-	log.Println("Announcing", domain, port)
-	var t ForwardTarget
-	t.Domain = domain
-	t.Port = port
-
-	writeCommand(ADD_TARGET, PrintForwardTarget(&t))
-
-	var udpAddress = net.UDPAddr{Port: LOCAL_UDP_PORT}
-	conn, err := net.DialUDP("udp", nil, &udpAddress)
-	if err != nil {
-		log.Println("Could not announce server", domain, err)
-	}
-	_, err = fmt.Fprintf(conn, ADD_TARGET+" "+PrintForwardTarget(&t))
-	if err != nil {
-		log.Println("AnnounceForwardTarget: write error", err)
-	}
-
-	conn.Close()
-}
-
-func writeCommand(args ...string) error {
-	var udpAddress = net.UDPAddr{Port: LOCAL_UDP_PORT}
-	conn, err := net.DialUDP("udp", nil, &udpAddress)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	_, err = fmt.Fprintf(conn, strings.Join(args, " "))
-	return err
-}
-
 func splitCommand(line string) (string, string) {
 	cmd, arg, _ := strings.Cut(line, " ")
 	return cmd, arg
@@ -197,7 +164,7 @@ func HandleAddTargetRequest(s *CoreServer, content string) {
 
 func shutdownPreviousInstance() {
 	// try listening to the port first
-	var port = LOCAL_UDP_PORT
+	var port = PORT
 	var udpAddress = net.UDPAddr{Port: port}
 	conn, err := net.ListenUDP("udp", &udpAddress)
 	if conn != nil {
@@ -207,7 +174,7 @@ func shutdownPreviousInstance() {
 	// If listening failed, another instance is running. Shutdown it down!
 	if err != nil {
 		log.Println("Sending shutdown command")
-		err := writeCommand(SHUTDOWN)
+		err := lib.SendCommand(SHUTDOWN)
 		if err != nil {
 			log.Println("error sending shutdown command:", err)
 		}
@@ -218,7 +185,7 @@ func shutdownPreviousInstance() {
 
 func startUDPServer(s *CoreServer) {
 	// this whoel thing runs inside a go routine
-	var port = LOCAL_UDP_PORT
+	var port = PORT
 	var udpAddress = net.UDPAddr{Port: port}
 	conn, err := net.ListenUDP("udp", &udpAddress)
 	if err != nil {

@@ -52,16 +52,13 @@ listen on port 80 and 443 using capabilities:
 */
 package main
 
-import (
-	"log"
-
-	core "go.hasen.dev/core_server"
-)
+import lib "go.hasen.dev/core_server/lib"
 
 func main() {
-	core.InitLogger()
-	log.Println()
-	log.Println("Starting Core Server")
-	proxy := core.NewCoreServer()
-	proxy.Start()
+	if ShouldDetach {
+		lib.DetachFromParentProcess()
+	}
+	InitLogger()
+	c := NewCoreServerWithConfigLoaded()
+	StartCoreServer(c)
 }

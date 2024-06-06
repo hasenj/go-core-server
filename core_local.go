@@ -1,6 +1,6 @@
 //go:build !release
 
-package core_server
+package main
 
 import (
 	"crypto/tls"
@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"sync"
 )
+
+const ShouldDetach = false
 
 func cmdInstalled(c string) bool {
 	_, err := exec.LookPath(c)
@@ -77,13 +79,11 @@ func StartHTTPSServer(core *CoreServer) error {
 		Handler: core,
 		TLSConfig: &tls.Config{
 			GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-				log.Println("GetCertificate")
-				log.Println(chi)
 				return getOrCreateCertificate(chi.ServerName), nil
 			},
 		},
 	}
-	log.Println("starting https locally")
+	log.Println("Starting https server locally")
 	// return hs.ListenAndServe()
 	return hs.ListenAndServeTLS("", "")
 }
@@ -93,11 +93,12 @@ func StartCoreServerHTTP(core *CoreServer) error {
 	return server.ListenAndServe()
 }
 
-func (s *CoreServer) Start() {
+func StartCoreServer(s *CoreServer) {
 	shutdownPreviousInstance()
 	go startUDPServer(s)
 
 	if cmdInstalled("mkcert") {
+		log.Println("Found mkcert")
 		go httpToHttpsRedirector()
 		log.Fatal(StartHTTPSServer(s))
 	} else {
@@ -107,5 +108,6 @@ func (s *CoreServer) Start() {
 
 // required!
 func InitLogger() {
-	// nothing here in local mode!
+	// nothing really to do here in local mode!
+	log.Println("Starting in local mode")
 }

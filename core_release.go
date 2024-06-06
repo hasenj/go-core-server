@@ -1,6 +1,6 @@
 //go:build release
 
-package core_server
+package main
 
 import (
 	"context"
@@ -14,6 +14,8 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
+
+const ShouldDetach = true
 
 var UnknownDomain = errors.New("Unknown Domain")
 
@@ -45,7 +47,7 @@ func StartHTTPSServer(s *CoreServer) {
 	server.ListenAndServeTLS("", "")
 }
 
-func (s *CoreServer) Start() {
+func StartCoreServer(s *CoreServer) {
 	shutdownPreviousInstance()
 	go startUDPServer(s)
 
